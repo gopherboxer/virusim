@@ -17,6 +17,7 @@ enum HTTP_CODE
   SERVER_ERROR = 500
 };
 
+bool is_file_exist(const char * path);
 inline unsigned int number_length(int n);
 std::string * split(std::string s, char d);//, size_t tab_size);
 void listen_socket(struct sockaddr_un * socket_addr, int sockfd, World * world, bool * keep_alive);

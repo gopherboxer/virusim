@@ -4,6 +4,7 @@
 #include <thread>
 #include <sys/un.h>
 #include <sys/socket.h>
+//#include <filesystem>
 
 #include "socket.hh"
 #include "simulator.hh"
@@ -26,9 +27,6 @@ int main(int argc, char * argv[])
       return 1;
     }
   }
-  std::cout << "-------------" << std::endl;
-  std::cout << "ENOENT: " << ENOENT << std::endl;
-  std::cout << "-------------" << std::endl;
 
   int sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
 
@@ -45,7 +43,7 @@ int main(int argc, char * argv[])
 
   int error = unlink(socket.sun_path);
 
-  if (error < 0)
+  if (error < 0 && is_file_exist(socket.sun_path))
   {
     std::cout << "Error: Unlinking." << std::endl;
     return 1;

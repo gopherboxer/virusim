@@ -1,5 +1,17 @@
 #include "socket.hh"
 
+bool is_file_exist(const char * path)
+{
+  FILE * file = fopen(path, "r");
+  
+  if (file)
+  {
+    fclose(file);
+    return file;
+  }
+  return file;
+}
+
 inline unsigned int number_length(int n)
 {
   return trunc(log10(n)) + 1;
