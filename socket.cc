@@ -3,7 +3,7 @@
 bool is_file_exist(const char * path)
 {
   FILE * file = fopen(path, "r");
-  
+
   if (file)
   {
     fclose(file);
@@ -86,7 +86,15 @@ void listen_socket(struct sockaddr_un * socket_addr, int sockfd, World * world, 
 
     for (int i = sockfd + 1; i <= highest_sockfd; i++)
     {
-      //if (FD_ISSET(i, &sockets_error)) {}
+      //if (FD_ISSET(i, &sockets_error))
+
+      if (FD_ISSET(i, &sockets_error))
+      {
+        if (i == highest_sockfd) highest_sockfd--;
+
+        close(i);
+        continue;
+      }
 
       if (FD_ISSET(i, &sockets_read) && FD_ISSET(i, &sockets_write))
       {
@@ -218,6 +226,8 @@ void listen_socket(struct sockaddr_un * socket_addr, int sockfd, World * world, 
         ssize_t sockets_bytes_send = send(i, send_buffer.c_str(), send_buffer.length(), 0);
 
         //std::cout << "SEND: " << send_buffer << std::endl;
+
+        if (i == highest_sockfd) highest_sockfd--;
 
         close(i);
         FD_CLR(i, &sockets_copy);
