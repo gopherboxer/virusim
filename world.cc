@@ -1,43 +1,69 @@
 #include "world.hh"
 
-void World::push_country(Country * country)
+World::World(float _probability_of_cure, float _probability_of_infection):
+  probability_of_cure(_probability_of_cure),
+  probability_of_infection(_probability_of_infection/38000000),
+  population(38000000),
+  infected(10),
+  recovered(0)
 {
-  countries[country->get_name()] = country;
+  susceptible = population - infected;
 }
 
-Country * World::get_country(std::string country_name)
+float World::get_probability_of_cure()
 {
-  std::map<std::string, Country *>::iterator it;
-  it = countries.find(country_name);
+  return probability_of_cure;
+}
 
-  if (it != countries.end()) return it->second;
-
-  return NULL;
+float World::get_probability_of_infection()
+{
+  return probability_of_infection;
 }
 
 unsigned int World::get_population()
 {
-  std::map<std::string, Country *>::iterator it;
-  unsigned int counter = 0;
-  for (it = countries.begin(); it != countries.end(); it++ )
-  {
-    counter += it->second->get_population();
-  }
-  return counter;
+  return population;
+}
+
+unsigned int World::get_susceptible()
+{
+  return susceptible;
 }
 
 unsigned int World::get_infected()
 {
-  std::map<std::string, Country *>::iterator it;
-  unsigned int counter = 0;
-  for (it = countries.begin(); it != countries.end(); it++ )
-  {
-    counter += it->second->get_infected();
-  }
-  return counter;
+  return infected;
+}
+unsigned int World::get_recovered()
+{
+  return recovered;
 }
 
-std::map<std::string, Country *> World::get_countries()
+void World::set_probability_of_cure(float _probability_of_cure)
 {
-  return countries;
+  probability_of_cure = _probability_of_cure;
+}
+void World::set_probability_of_infection(float _probability_of_infection)
+{
+  probability_of_infection = _probability_of_infection;
+}
+
+void World::set_population(unsigned int _population)
+{
+  population = _population;
+}
+
+void World::set_susceptible(unsigned int _susceptible)
+{
+  susceptible = _susceptible;
+}
+
+void World::set_infected(unsigned int _infected)
+{
+  infected = _infected;
+}
+
+void World::set_recovered(unsigned int _recovered)
+{
+  recovered = _recovered;
 }

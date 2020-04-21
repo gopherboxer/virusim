@@ -1,70 +1,71 @@
 #include "simulator.hh"
 
-//void simulate(/*World & world*/)//, Medicine * medicine)
-//{
-  //std::cout << "World thread: " /*<< world.get_population()*/ << std::endl;
-//}
-
-SimulatorTask::SimulatorTask(World * _world, bool * _keep_alive)
-{
-  world = _world;
-  keep_alive = _keep_alive;
-}
+SimulatorTask::SimulatorTask(World * _world, bool * _keep_alive, bool * _waiting_for_necessary_data):
+  world(_world),
+  keep_alive(_keep_alive),
+  waiting_for_necessary_data(_waiting_for_necessary_data)
+{}
 
 void SimulatorTask::run()
 {
+  //world->set_keep_alive(false);
+
+  int susceptible_old = 0, infected_old = 0, recovered_old = 0, tries = 0;
+  //std::cout << world->get_keep_alive() << std::endl;
+  //while (world->get_keep_alive())
   while (*keep_alive)
   {
-    /*std::cout << "POPULATION: " << world->get_population() << std::endl;
-    std::cout << "INFECTED: " << world->get_infected() << std::endl;
-    std::cout << "--------------------" << std::endl;
-*/
-    std::map<std::string, Country * >::iterator it = world->get_countries().begin();
+    //if (world->get_waiting_for_necessary_data()) continue;
 
-    for (std::pair<std::string, Country * > country_element : world->get_countries())
+    if (*waiting_for_necessary_data) continue;
+
+    //simulate(world);
+    //simulate(world);
+    simulate();
+
+    if (world->get_susceptible() == susceptible_old || world->get_infected() == infected_old || world->get_recovered() == recovered_old)
     {
-  		// Accessing KEY from element
-  		/*std::string word = element.first;
-  		// Accessing VALUE from element.
-  		int count = element.second;
-  		std::cout << word << " :: " << count << std::endl;*/
-      unsigned int infected = country_element.second->get_infected();
-      //std::cout << country_element.first << ": " << infected << std::endl;
+      tries++;
+    }
+    else
+    {
+      susceptible_old = world->get_susceptible();
+      infected_old = world->get_infected();
+      recovered_old = world->get_recovered();
+      tries = 0;
+    }
 
-      //std::cout << "NAME: " << country_element.second->get_name() << std::endl;
-
-      /*
-        --Algorithm--
-
-        infected * infected/100
-
-      */
-
-
-      if (infected > 0 && infected < 1000)
-      {
-        infected++;
-      }
-
-      //If anyone don't alive
-      if (world->get_population() == 0)
-      {
-        //Turning off the server
-        *keep_alive = false;
-        break;
-      }
-
-      /*if (infected > 0 && infected < 1000)
-      {
-        //std::cout << "NAME: " << country_element.second->get_name() << std::endl;
-        country_element.second->set_infected(infected + 1);
-      }*/
-
-      //std::cout << "country: " << countries_element.first << std::endl;
-
-
-  	}
+    if (tries == 5)
+    {
+      //world->set_keep_alive(false);
+      //*keep_alive = false;
+      *waiting_for_necessary_data = true;
+      tries = 0;
+    }
 
     sleep(1);
   }
+}
+
+void SimulatorTask::simulate()
+{
+  unsigned int S = world->get_susceptible();
+  unsigned int I = world->get_infected();
+  unsigned int R = world->get_recovered();
+
+  std::cout << " S: " << S << " I: " << I << " R: " << R << std::endl;
+  
+  float r = world->get_probability_of_infection();
+  float a = world->get_probability_of_cure();
+
+  int dS = r * S * I;
+  int dR = a     * I;
+
+  S -= dS;
+  I += dS - dR;
+  R += dR;
+
+  world->set_susceptible(S);
+  world->set_infected(I);
+  world->set_recovered(R);
 }

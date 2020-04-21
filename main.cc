@@ -1,34 +1,55 @@
-#include <iostream>
-#include <unistd.h>
-//#include <pthread.h>
 #include <thread>
+#include <iostream>
 #include <sys/un.h>
+#include <unistd.h>
 #include <sys/socket.h>
-//#include <filesystem>
+
+#include <netinet/in.h>
 
 #include "socket.hh"
 #include "simulator.hh"
+#include "utils.hh"
 
 #define MAX_SOCKET_QUEUE 10
+#define FNULL 0.0
 
-int main(int argc, char * argv[])
+int main(int argc, const char * argv[])
 {
-  std::string custom_socket_path = "virusim.sock";
+  //Default values
+  int socket_port = 5050;
+  World * world = new World(FNULL, FNULL);
+  bool keep_alive = true, waiting_for_necessary_data = false;
 
   if (argc > 1)
   {
-    if (strncmp(argv[1], "-path", 5) == 0 && argv[2] != NULL)
+    for (int i = 1; i < argc; i += 2)
     {
-      custom_socket_path = argv[2];
-    }
-    else
-    {
-      std::cout << "Usage: ./virusim -path <path>" << std::endl;
-      return 1;
+      if (strncmp(argv[i], "-port", 5) == 0 && argc-1 >= i+1) socket_port = atoi(argv[i + 1]);
+      else if (strncmp(argv[i], "-pfc", 4) == 0 && argc-1 >= i+1) world->set_probability_of_cure(std::stof(argv[i + 1]));
+      else if (strncmp(argv[i], "-pfi", 4) == 0 && argc-1 >= i+1) world->set_probability_of_infection(std::stof(argv[i + 1]));
+      else if (strncmp(argv[i], "-p", 2) == 0 && argc-1 >= i+1) world->set_population(std::stoul(argv[i + 1]));
+      else if (strncmp(argv[i], "-s", 2) == 0 && argc-1 >= i+1) world->set_susceptible(std::stoul(argv[i + 1]));
+      else if (strncmp(argv[i], "-i", 2) == 0 && argc-1 >= i+1) world->set_infected(std::stoul(argv[i + 1]));
+      else if (strncmp(argv[i], "-r", 2) == 0 && argc-1 >= i+1) world->set_recovered(std::stoul(argv[i + 1]));
+      else
+      {
+        std::cout << "Usage: ./virusim -port <port> -pfc <probability_of_cure> -pfi <probability_of_infection> -p <population> -s <susceptible> -i <infected> -r <recovered>" << std::endl;
+        return 1;
+      }
     }
   }
 
-  int sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
+  std::cout << "Listening on port: " << socket_port << std::endl;
+
+  if (world->get_probability_of_cure() == FNULL || world->get_probability_of_infection() == FNULL)
+  {
+    waiting_for_necessary_data = true;
+    std::cout << "You didn't set the probability_of_cure or the probability_of_infection!!!\nProgram is waiting for this data!!!" << std::endl;
+  }
+
+  world->set_probability_of_infection(world->get_probability_of_infection()/world->get_population());
+
+  int sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
   if (sockfd < 0)
   {
@@ -36,16 +57,17 @@ int main(int argc, char * argv[])
     return 1;
   }
 
-  struct sockaddr_un socket;
-  socket.sun_family = AF_UNIX;
+  struct sockaddr_in socket;
+  socket.sin_family = AF_INET;
+  socket.sin_addr.s_addr = INADDR_ANY;
+  socket.sin_port = htons(socket_port);
 
-  strcpy(socket.sun_path, custom_socket_path.c_str());
+  int opt = 1;
+  int error = setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt));
 
-  int error = unlink(socket.sun_path);
-
-  if (error < 0 && is_file_exist(socket.sun_path))
+  if (error == 0)
   {
-    std::cout << "Error: Unlinking." << std::endl;
+    std::cout << "Error: Setting socket." << std::endl;
     return 1;
   }
 
@@ -57,18 +79,7 @@ int main(int argc, char * argv[])
     return 1;
   }
 
-  //pthread_t calculation_thread;
-  World * world = new World();
-  Country * china_country = new Country("china", 138600000, 146, 1);
-  Country * poland_country = new Country("poland", 38000000, 123, 0);
-  Country * ukraine_country = new Country("ukraine", 42000000, 73, 0);
-  //Country * country;
-  world->push_country(china_country);
-  world->push_country(poland_country);
-  world->push_country(ukraine_country);
-
-  bool keep_alive = true;
-  SimulatorTask simulator(world, &keep_alive); //= new SimulatorTask(world);
+  SimulatorTask simulator(world, &keep_alive, &waiting_for_necessary_data);
 
   std::thread calculation_thread(&SimulatorTask::run, &simulator);//, world);
 
@@ -80,7 +91,7 @@ int main(int argc, char * argv[])
     return 1;
   }
 
-  listen_socket(&socket, sockfd, world, &keep_alive);
+  listen_socket(&socket, sockfd, world, &keep_alive, &waiting_for_necessary_data);
 
   close(sockfd);
 
