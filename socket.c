@@ -69,7 +69,7 @@ void listen_socket(struct sockaddr_in * socket_addr, int sockfd)
         }
 
         read_buffer[socket_bytes_read] = '\0';
-
+        size_t request_details_size, path_size;
         char * send_buffer = (char *) malloc(strlen(HTTP_NOT_FOUND_ERROR) * sizeof(char));
         char ** request_details = split(read_buffer, ' ');
         char ** path = split(request_details[1], '/');
@@ -95,6 +95,8 @@ void listen_socket(struct sockaddr_in * socket_addr, int sockfd)
         ssize_t sockets_bytes_send = send(i, send_buffer, strlen(send_buffer), 0);
 
         free(send_buffer);
+        free(request_details);
+        free(path);
 
         if (i == highest_sockfd) highest_sockfd--;
 
