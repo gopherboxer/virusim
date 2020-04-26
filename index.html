@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Virusim</title>
+</head>
+<body>
+  <h1>Virusim</h1>
+  <div class="">
+    <label>Probability of cure</label>
+    <input type="number" id="pfc-input" value="0.4"/>
+    <label>Probability of infection</label>
+    <input type="number" id="pfi-input" value="0.9"/>
+    <label>Population</label>
+    <input type="number" id="population-input" value="38000000"/>
+    <label>Susceptible</label>
+    <input type="number" id="susceptible-input" value="38000000"/>
+    <label>Infected</label>
+    <input type="number" id="infected-input" value="10"/>
+    <label>Recovered</label>
+    <input type="number" id="recovered-input" value="0"/>
+    <button id="calculatebtn">Calculate</button>
+  </div>
+  <div class="container">
+    <canvas id="myChart"></canvas>
+  </div>
+</body>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.js"></script>
+  <script>
+    function renderChart(susceptible_data, infected_data, recovered_data, labels) {
+      var ctx = document.getElementById("myChart").getContext('2d');
+      var myChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+              labels: labels,
+              datasets: [{
+                label: 'Susceptible',
+                data: susceptible_data,
+                borderColor: "#0000FF",
+              }, {
+                label: 'Infected',
+                data: infected_data,
+                borderColor: "#FFFF00",
+              }, {
+                label: 'Recovered',
+                data: recovered_data,
+                borderColor: "#FF0000",
+              }]
+          },
+      });
+    }
+
+    document.getElementById('calculatebtn').addEventListener('click', function () {
+      const population = parseInt(document.getElementById('population-input').value);
+      const probability_of_cure = parseFloat(document.getElementById('pfc-input').value);
+      const probability_of_infection = parseFloat(document.getElementById('pfi-input').value)/population;
+      let susceptible = parseInt(document.getElementById('susceptible-input').value);
+      let infected = parseInt(document.getElementById('infected-input').value);
+      let recovered = parseInt(document.getElementById('recovered-input').value);
+
+      let tries = 0, susceptible_old = 0, infected_old = 0, recovered_old = 0;
+
+      let susceptible_data = [], infected_data = [], recovered_data = [];
+      let labels = [];
+
+      let day = 0;
+
+      while (true) {
+        let dS = parseInt(probability_of_infection * susceptible * infected);
+        let dR = parseInt(probability_of_cure * infected);
+
+        susceptible -= dS;
+        infected += dS - dR;
+        recovered += dR;
+
+        day++;
+
+        if (day % 10 == 0)
+        {
+          susceptible_data.push(susceptible);
+          infected_data.push(infected);
+          recovered_data.push(recovered);
+          labels.push(day)
+        }
+
+        //console.log("S: " + susceptible + " I: " + infected + " R: " + recovered);
+
+        if (susceptible == susceptible_old || infected == infected_old || recovered == recovered_old) {
+          tries++;
+        }
+        else
+        {
+          susceptible_old = susceptible;
+          infected_old = infected;
+          recovered_old = recovered;
+          tries = 0;
+        }
+
+        if (tries >= 5) break;
+      }
+
+      renderChart(susceptible_data, infected_data, recovered_data, labels);
+    })
+    </script>
+</html>
