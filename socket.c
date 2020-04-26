@@ -70,52 +70,27 @@ void listen_socket(struct sockaddr_in * socket_addr, int sockfd)
 
         read_buffer[socket_bytes_read] = '\0';
 
-        char * send_buffer = (char *) malloc(strlen("HTTP/1.0 404 Not Found\n") * sizeof(char));
+        char * send_buffer = (char *) malloc(strlen(HTTP_NOT_FOUND_ERROR) * sizeof(char));
         char ** request_details = split(read_buffer, ' ');
         char ** path = split(request_details[1], '/');
 
-        if (strncmp(path[1], "", 1) != 0) strcat(send_buffer, "HTTP/1.0 404 Not Found\n");
-         //strcat(send_buffer, "HTTP/1.0 200 OK Content-Type: text/html Content-Length: 4\n\ndupa");
+        if (strncmp(path[1], "", 1) != 0) strcat(send_buffer, HTTP_NOT_FOUND_ERROR);
+        else
         {
           long index_file_length;
           char * index_file_content = get_file_content("index.html");//, &index_file_length);
-          //strcat(send_buffer, "HTTP/1.0 200 OK Content-Type: text/html Content-Length: 4\n\ndupa");
-          //strcat(send_buffer, "HTTP/1.0 200 OK\nContent-Type: text/html\n\n");
-          //printf("INDEX_LENGTH: %ld\n", index_file_length);
 
-          //send_buffer = realloc(send_buffer, )
-          //strcat(send_buffer, "HTTP/1.0 200 OK\nContent-Type: text/html\n\n");
-          //strcat(send_buffer, index_file_content);
-          //printf("INDEX: %lu\n", strlen(index_file_content));
+          send_buffer = realloc(send_buffer, strlen(index_file_content) * strlen(HTTP_OK) * sizeof(char));
 
-          //send_buffer = realloc(send_buffer, strlen(index_file_content) * strlen("HTTP/1.0 200 OK\nContent-Type: text/html\n\n") * sizeof(char));
-          send_buffer = realloc(send_buffer, strlen(index_file_content) * strlen("HTTP/1.0 200 OK\nContent-Type: text/html\n\n") * sizeof(char));
-
-          if (send_buffer == NULL) strcat(send_buffer, "HTTP/1.0 500 Internal Server\n");
-          //char * send_buffer = malloc(send_buffer, (strlen(index_file_content) + strlen("HTTP/1.0 200 OK\nContent-Type: text/html\n\n") * sizeof(char));///malloc(1024 * sizeof(char));
-
-          strcat(send_buffer, "HTTP/1.0 200 OK\nContent-Type: text/html\n\n");
-          strcat(send_buffer, index_file_content);
+          if (send_buffer == NULL) strcat(send_buffer, HTTP_INTERNAL_SERVER_ERROR);
+          else
+          {
+            strcat(send_buffer, HTTP_OK);
+            strcat(send_buffer, index_file_content);
+          }
 
           free(index_file_content);
         }
-        /*(else
-        {
-          //long index_file_length;
-          char * index_file_content = get_file_content("index.html");//, &index_file_length);
-          //send_buffer = realloc(send_buffer, 1000 * sizeof(char));
-
-          //if(send_buffer == NULL) printf("Error: Memory reallocation.\n");
-
-          //send_buffer = malloc(index_file_length + 41 * sizeof(char));
-          //send_buffer = malloc(1000 * sizeof(char));
-          //free(&index_file_length);
-
-          strcat(send_buffer, "HTTP/1.0 200 OK Content-Type: text/html\n\n");
-          strcat(send_buffer, index_file_content);
-          //free(index_file_content);
-          //printf("TO SEND:%s", send_buffer);
-        }*/
 
         ssize_t sockets_bytes_send = send(i, send_buffer, strlen(send_buffer), 0);
 
